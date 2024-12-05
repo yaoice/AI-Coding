@@ -573,6 +573,14 @@
                 </div>
 
                 <div class="control-group">
+                    <label>字幕层级：</label>
+                    <select id="captionLayer" onchange="updateCaption()">
+                        <option value="front">前置</option>
+                        <option value="back">后置</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
                     <label>位置调整：</label>
                     <div class="position-controls">
                         <div class="position-label">水平位置：</div>
@@ -696,7 +704,7 @@
                     alert('图层分离失败: ' + error.message);
                     loading.style.display = 'none';
                     
-                    // 显���上传占位符
+                    // 显上传占位符
                     uploadPlaceholder.style.display = 'flex';
                 });
 
@@ -739,6 +747,10 @@
             captionOverlay.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
             captionOverlay.style.display = text ? 'block' : 'none';
             captionOverlay.style.whiteSpace = 'pre';
+
+            // 设置字幕层级
+            const layer = document.getElementById('captionLayer').value;
+            captionOverlay.style.zIndex = layer === 'front' ? '4' : '2';
 
             // 添加文字描边效果
             const strokeWidth = Math.max(1, fontSize / 24);

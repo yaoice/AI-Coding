@@ -1,0 +1,19 @@
+[Unit]
+Description=MBTI Personality Test Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=your_username
+Group=your_username
+WorkingDirectory=/home/your_username/mbti_test
+Environment="PATH=/home/your_username/mbti_test/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/bin/bash /home/your_username/mbti_test/start_mbti.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/mbti/access.log
+StandardError=append:/var/log/mbti/error.log
+
+[Install]
+WantedBy=multi-user.target 

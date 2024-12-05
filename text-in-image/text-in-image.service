@@ -1,0 +1,19 @@
+[Unit]
+Description=MBTI Personality Test Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/text-in-image
+Environment="PATH=/root/text-in-image/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/bin/bash /root/text-in-image/start_text_in_image.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/text-in-image/access.log
+StandardError=append:/var/log/text-in-image/error.log
+
+[Install]
+WantedBy=multi-user.target

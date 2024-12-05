@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片字幕生成器</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin: 0;
+            font-weight: 500;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        }
+        .image-section {
+            position: relative;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .upload-section {
+            margin-bottom: 20px;
+        }
+        .image-container {
+            position: relative;
+            background-color: transparent;
+            border-radius: 8px;
+            overflow: visible;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #e2e8f0;
+            width: fit-content;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .image-container.downloading {
+            border: none;
+            background: none;
+        }
+        #imagePreview {
+            max-width: 100%;
+            max-height: 600px;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #backgroundLayer, #foregroundLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: none;
+            object-fit: contain;
+        }
+        #backgroundLayer {
+            z-index: 1;
+        }
+        #foregroundLayer {
+            z-index: 3;
+            pointer-events: none;
+        }
+        .caption-overlay {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 2;
+            display: none;
+            max-width: none;
+            width: auto;
+            white-space: pre;
+            transition: all 0.3s ease;
+            cursor: move;
+            user-select: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: auto;
+        }
+        .controls-section {
+            background: linear-gradient(145deg, #1a1f25 0%, #2a2f35 100%);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .controls-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        }
+        .control-group {
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .control-group:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+        }
+        .control-group::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .caption-input-container {
+            position: relative;
+            width: 100%;
+        }
+        .caption-input-container textarea {
+            width: 100%;
+            padding: 12px 42px 12px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+        .caption-input-container textarea::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .caption-input-container textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        .ai-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #2188ff 0%, #0366d6 100%);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            width: 36px;
+            height: 36px;
+            box-shadow: 0 2px 8px rgba(33, 136, 255, 0.3);
+        }
+        .ai-btn:hover {
+            background: linear-gradient(135deg, #2188ff 0%, #0351a8 100%);
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 12px rgba(33, 136, 255, 0.4);
+        }
+        .ai-btn i {
+            filter: none;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+        .ai-btn:hover i {
+            transform: scale(1.1);
+            animation: sparkle 1.5s infinite;
+        }
+        .ai-btn.generating {
+            animation: generating 1.5s linear infinite;
+            background: linear-gradient(135deg, #2188ff 0%, #0366d6 100%);
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        @keyframes sparkle {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+        @keyframes generating {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+            transition: transform 0.2s ease;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+        select {
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+            min-width: 120px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        select option {
+            background: #1a1f25;
+            color: #fff;
+            padding: 8px;
+        }
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        .position-controls {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .position-controls:last-child {
+            margin-bottom: 0;
+        }
+        .position-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            text-align: right;
+        }
+        .position-slider {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .position-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .position-slider:hover::-webkit-slider-thumb {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn-download {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-download:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .upload-placeholder {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+        }
+        .upload-placeholder i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+            color: #999;
+        }
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 16px;
+            min-width: 180px;
+            text-align: center;
+            z-index: 4;
+            backdrop-filter: blur(4px);
+        }
+        .circular-progress {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+            transform: rotate(-90deg);
+        }
+        .circular-progress circle {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+        }
+        .circular-progress .background {
+            stroke: rgba(255, 255, 255, 0.1);
+        }
+        .circular-progress .progress {
+            stroke: #2188ff;
+            transition: stroke-dashoffset 0.3s ease;
+        }
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            font-size: 24px;
+            font-weight: 500;
+            color: #fff;
+        }
+        .loading-title {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin-bottom: 16px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .btn-download {
+            background-color: #fff;
+            color: #4a90e2;
+            border: 1px solid #4a90e2;
+            margin-top: 20px;
+        }
+        .btn-download:hover {
+            background-color: #f8f9fa;
+            color: #357abd;
+            border-color: #357abd;
+        }
+        .btn-upload {
+            background: linear-gradient(135deg, #2188ff 0%, #0366d6 100%);
+            color: white;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(33, 136, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-upload::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+        .btn-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 136, 255, 0.4);
+            background: linear-gradient(135deg, #2188ff 0%, #0351a8 100%);
+        }
+        .btn-upload:hover::before {
+            left: 100%;
+        }
+        .btn-upload i {
+            font-size: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px;
+            transition: all 0.3s ease;
+        }
+        .btn-upload:hover i {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .download-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+        .download-btn:hover {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+        }
+        .download-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>图片字幕生成器</h1>
+        </div>
+        
+        <div class="main-content">
+            <div class="image-section">
+                <div class="upload-section">
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                    <button class="btn-upload" onclick="document.getElementById('imageInput').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        选择图片
+                    </button>
+                </div>
+
+                <div class="image-container">
+                    <div class="upload-placeholder" id="uploadPlaceholder">
+                        <i class="fas fa-image"></i>
+                        <p>点击上方按钮选择图片</p>
+                    </div>
+                    <img id="backgroundLayer">
+                    <div class="caption-overlay" id="captionOverlay"></div>
+                    <img id="foregroundLayer">
+                    <div class="loading">
+                        <div class="loading-title">正在理图片...</div>
+                        <div class="circular-progress">
+                            <svg viewBox="0 0 120 120">
+                                <circle class="background" cx="60" cy="60" r="54" />
+                                <circle class="progress" cx="60" cy="60" r="54" />
+                            </svg>
+                            <div class="progress-text">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <div class="control-group">
+                    <label>字幕文本：</label>
+                    <div class="caption-input-container">
+                        <textarea id="captionText" placeholder="输入字幕文本，支持换行" oninput="updateCaption()"></textarea>
+                        <button class="ai-btn" onclick="generateAICaption()" title="AI生成字幕">
+                            <i class="fas fa-magic"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>字体大小：</label>
+                    <input type="number" id="fontSize" value="32" min="12" max="72" oninput="updateCaption()">
+                </div>
+
+                <div class="control-group">
+                    <label>字体颜色：</label>
+                    <input type="color" id="fontColor" value="#ff0000" oninput="updateCaption()">
+                </div>
+
+                <div class="control-group">
+                    <label>字体粗细</label>
+                    <select id="fontWeight" onchange="updateCaption()">
+                        <option value="normal">正常</option>
+                        <option value="bold">粗体</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>位置调整：</label>
+                    <div class="position-controls">
+                        <div class="position-label">水平位置：</div>
+                        <input type="range" class="position-slider" id="xPosition" min="0" max="100" value="50" oninput="updateCaption()">
+                    </div>
+                    <div class="position-controls">
+                        <div class="position-label">垂直位置：</div>
+                        <input type="range" class="position-slider" id="yPosition" min="0" max="100" value="50" oninput="updateCaption()">
+                    </div>
+                    <div class="position-controls">
+                        <div class="position-label">旋转角度：</div>
+                        <input type="range" class="position-slider" id="rotation" min="-180" max="180" value="0" oninput="updateCaption()">
+                    </div>
+                </div>
+
+                <button class="btn-download" onclick="downloadImage()">
+                    <i class="fas fa-download"></i> 下载图片
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const backgroundLayer = document.getElementById('backgroundLayer');
+        const foregroundLayer = document.getElementById('foregroundLayer');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const captionOverlay = document.getElementById('captionOverlay');
+        const captionText = document.getElementById('captionText');
+
+        let originalFileName = ''; // 保存原始文件名
+        let currentImageFile = null; // 保存当前图片文件
+
+        imageInput.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                currentImageFile = file; // 保存图片文件
+                originalFileName = file.name.replace(/\.[^/.]+$/, "");
+                uploadPlaceholder.style.display = 'none';
+                
+                // 清除之前的图片
+                backgroundLayer.src = '';
+                foregroundLayer.src = '';
+                backgroundLayer.style.display = 'none';
+                foregroundLayer.style.display = 'none';
+                
+                // 清除字幕
+                captionText.value = '';
+                captionOverlay.style.display = 'none';
+
+                // 创建临时URL以获取图片尺寸
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = function() {
+                    // 设置图片容器的尺寸
+                    const container = document.querySelector('.image-container');
+                    container.style.width = this.width + 'px';
+                    container.style.height = this.height + 'px';
+                    URL.revokeObjectURL(url);
+                };
+                img.src = url;
+                
+                // 创建FormData对象
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                // 显示加载动画
+                const loading = document.querySelector('.loading');
+                const progressCircle = document.querySelector('.circular-progress .progress');
+                const progressText = document.querySelector('.circular-progress .progress-text');
+                const loadingTitle = document.querySelector('.loading-title');
+                
+                // 设置圆形进度条的初始状态
+                const circumference = 2 * Math.PI * 54; // 圆的周长
+                progressCircle.style.strokeDasharray = circumference;
+                progressCircle.style.strokeDashoffset = circumference;
+                
+                loading.style.display = 'block';
+                loadingTitle.textContent = '正在处理图片...';
+                progressText.textContent = '0%';
+
+                // 用于跟踪两个图是否都加载完成
+                let loadedImages = 0;
+                const totalImages = 2;
+
+                function checkAllImagesLoaded() {
+                    loadedImages++;
+                    if (loadedImages === totalImages) {
+                        // 所有图层都加载完成后再显示
+                        backgroundLayer.style.display = 'block';
+                        foregroundLayer.style.display = 'block';
+                        // 延迟一下再隐藏加载动画
+                        setTimeout(() => {
+                            loading.style.display = 'none';
+                        }, 200);
+                    }
+                }
+
+                // 调用后端分离图层接口
+                fetch('/separate_layers', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('图层分离失败');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 设置背景层和前景层，并添加加载事件监听
+                    backgroundLayer.onload = checkAllImagesLoaded;
+                    foregroundLayer.onload = checkAllImagesLoaded;
+
+                    // 设置图片源会触发加载，但先不显示
+                    backgroundLayer.src = data.background_layer;
+                    foregroundLayer.src = data.foreground_layer;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('图层分离失败: ' + error.message);
+                    loading.style.display = 'none';
+                    
+                    // 显���上传占位符
+                    uploadPlaceholder.style.display = 'flex';
+                });
+
+                // 模拟进度，加快速度
+                let progress = 0;
+                const interval = setInterval(() => {
+                    if (progress >= 90) {
+                        clearInterval(interval);
+                    } else {
+                        // 加快进度增加的速度
+                        progress += 2;
+                        const offset = circumference - (progress / 100) * circumference;
+                        progressCircle.style.strokeDashoffset = offset;
+                        progressText.textContent = `${progress}%`;
+                    }
+                }, 30); // 缩短更新间隔
+            }
+            
+            // 重置 input 的值，这样相同的文件也能触发 change 事件
+            e.target.value = '';
+        });
+
+        function updateCaption() {
+            if (!backgroundLayer.src) return;
+
+            const text = captionText.value;
+            const fontSize = document.getElementById('fontSize').value;
+            const fontColor = document.getElementById('fontColor').value;
+            const fontWeight = document.getElementById('fontWeight').value;
+            const xPos = document.getElementById('xPosition').value;
+            const yPos = document.getElementById('yPosition').value;
+            const rotation = document.getElementById('rotation').value;
+
+            captionOverlay.textContent = text;
+            captionOverlay.style.fontSize = fontSize + 'px';
+            captionOverlay.style.color = fontColor;
+            captionOverlay.style.fontWeight = fontWeight;
+            captionOverlay.style.left = xPos + '%';
+            captionOverlay.style.top = yPos + '%';
+            captionOverlay.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+            captionOverlay.style.display = text ? 'block' : 'none';
+            captionOverlay.style.whiteSpace = 'pre';
+
+            // 添加文字描边效果
+            const strokeWidth = Math.max(1, fontSize / 24);
+            captionOverlay.style.textShadow = `
+                ${-strokeWidth}px ${-strokeWidth}px 0 #000,
+                ${strokeWidth}px ${-strokeWidth}px 0 #000,
+                ${-strokeWidth}px ${strokeWidth}px 0 #000,
+                ${strokeWidth}px ${strokeWidth}px 0 #000,
+                0 ${-strokeWidth}px 0 #000,
+                ${-strokeWidth}px 0 0 #000,
+                ${strokeWidth}px 0 0 #000,
+                0 ${strokeWidth}px 0 #000
+            `;
+        }
+
+        function generateAICaption() {
+            if (!backgroundLayer.src) {
+                alert('请先选择一张图片');
+                return;
+            }
+
+            if (!currentImageFile) {
+                alert('无法获取图片文件');
+                return;
+            }
+
+            // 禁用按钮并显示加载状态
+            const aiBtn = document.querySelector('.ai-btn');
+            aiBtn.disabled = true;
+            aiBtn.classList.add('generating');
+            aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            aiBtn.title = '生成字幕中...';
+
+            // 显示加载动画
+            const loading = document.querySelector('.loading');
+            const progressCircle = document.querySelector('.circular-progress .progress');
+            const progressText = document.querySelector('.circular-progress .progress-text');
+            const loadingTitle = document.querySelector('.loading-title');
+            
+            loading.style.display = 'block';
+            loadingTitle.textContent = '正在生成字幕...';
+            progressText.textContent = '0%';
+
+            // 设置圆形进度条的初始状态
+            const circumference = 2 * Math.PI * 54;
+            progressCircle.style.strokeDasharray = circumference;
+            progressCircle.style.strokeDashoffset = circumference;
+
+            // 模拟进度
+            let progress = 0;
+            const interval = setInterval(() => {
+                if (progress >= 90) {
+                    clearInterval(interval);
+                } else {
+                    progress += 2;
+                    const offset = circumference - (progress / 100) * circumference;
+                    progressCircle.style.strokeDashoffset = offset;
+                    progressText.textContent = `${progress}%`;
+                }
+            }, 30);
+
+            // 创建FormData对象并添加图片文
+            const formData = new FormData();
+            formData.append('image', currentImageFile);  // 使用保存的图片文件
+
+            // 调用generate_caption接口
+            fetch('/generate_caption', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(interval);
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                progressCircle.style.strokeDashoffset = 0;
+                progressText.textContent = '100%';
+                
+                // 设置生成的字幕
+                captionText.value = data.caption;
+                updateCaption();
+                
+                // 延迟一下再隐藏加载动画
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                    // 恢复按钮状态
+                    aiBtn.disabled = false;
+                    aiBtn.classList.remove('generating');
+                    aiBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                    aiBtn.title = 'AI生成字幕';
+                }, 200);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                clearInterval(interval);
+                loadingTitle.textContent = '生成失败';
+                progressText.textContent = error.message;
+                
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                    // 恢复按钮状态
+                    aiBtn.disabled = false;
+                    aiBtn.classList.remove('generating');
+                    aiBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                    aiBtn.title = 'AI生成字幕';
+                }, 2000);
+            });
+        }
+
+        function downloadImage() {
+            if (!backgroundLayer.src) {
+                alert('请先选择一张图片');
+                return;
+            }
+
+            const caption = captionText.value;
+            if (!caption) {
+                alert('请输入字幕文本');
+                return;
+            }
+
+            // 禁用下载按钮
+            const downloadBtn = document.querySelector('.btn-download');
+            downloadBtn.disabled = true;
+
+            // 获取图片容器并临时移除边框
+            const container = document.querySelector('.image-container');
+            container.classList.add('downloading');
+
+            // 使用html2canvas截图
+            html2canvas(container, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                scale: window.devicePixelRatio,
+                logging: false,
+                removeContainer: false,
+            }).then(canvas => {
+                // 将canvas转换为blob
+                canvas.toBlob(blob => {
+                    // 创建下载链接
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    // 使用原始文件名加上_caption后缀
+                    const filename = currentImageFile.name;
+                    const filenameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+                    a.download = `${filenameWithoutExt}_caption.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    // 恢复下载按钮和容器样式
+                    downloadBtn.disabled = false;
+                    container.classList.remove('downloading');
+                }, 'image/png');
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('图片生成失败');
+                downloadBtn.disabled = false;
+                container.classList.remove('downloading');
+            });
+        }
+
+        // 拖拽功能
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 50;  // 初始位置为50%
+        let yOffset = 50;
+
+        captionOverlay.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        function dragStart(e) {
+            initialX = e.clientX;
+            initialY = e.clientY;
+            
+            if (e.target === captionOverlay) {
+                isDragging = true;
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                
+                const imageRect = backgroundLayer.getBoundingClientRect();
+                
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                xOffset = Math.min(Math.max(0, xOffset + (currentX / imageRect.width) * 100), 100);
+                yOffset = Math.min(Math.max(0, yOffset + (currentY / imageRect.height) * 100), 100);
+
+                // 更新位置滑块的值
+                document.getElementById('xPosition').value = xOffset;
+                document.getElementById('yPosition').value = yOffset;
+                
+                // 更新字幕位置
+                updateCaption();
+                
+                initialX = e.clientX;
+                initialY = e.clientY;
+            }
+        }
+
+        function dragEnd(e) {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+
+        // 监听位置滑块的变化
+        document.getElementById('xPosition').addEventListener('input', function() {
+            xOffset = this.value;
+            updateCaption();
+        });
+
+        document.getElementById('yPosition').addEventListener('input', function() {
+            yOffset = this.value;
+            updateCaption();
+        });
+
+        // 更新启用/禁用下载按钮的函数
+        function updateDownloadButton() {
+            const imageInput = document.getElementById('imageInput');
+            const captionInput = document.getElementById('captionInput');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            downloadBtn.disabled = !(imageInput.files[0] && captionInput.value);
+        }
+
+        // 在图片上传和字幕输入时更新下载按钮状态
+        document.getElementById('imageInput').addEventListener('change', updateDownloadButton);
+        document.getElementById('captionInput').addEventListener('input', updateDownloadButton);
+    </script>
+</body>
+</html> 

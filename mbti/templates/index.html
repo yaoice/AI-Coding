@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>职场MBTI性格测试</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f5f5;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --hover-color: #e3f2fd;
+            --selected-color: #bbdefb;
+        }
+
+        body {
+            font-family: 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.2em;
+            margin-bottom: 16px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .question {
+            margin-bottom: 40px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .question:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-number {
+            background-color: var(--primary-color);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .question h3 {
+            margin: 0;
+            font-size: 1.2em;
+            color: var(--text-color);
+            flex-grow: 1;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-left: 48px;
+        }
+
+        .option {
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: white;
+        }
+
+        .option:hover {
+            background-color: var(--hover-color);
+            border-color: var(--primary-color);
+        }
+
+        .option.selected {
+            background-color: var(--selected-color);
+            border-color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .submit-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 40px;
+            padding: 24px;
+            border-radius: 12px;
+            background-color: #f8f9fa;
+            display: none;
+        }
+
+        .result-content {
+            text-align: center;
+        }
+
+        .result-type {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 16px;
+        }
+
+        .result-description {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #444;
+            text-align: left;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .options {
+                padding-left: 20px;
+            }
+
+            .question {
+                padding: 16px;
+            }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>职场MBTI性格测试</h1>
+            <p>通过回答以下问题，了解你在职场中的性格特征和最适合的工作方向。</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+
+        <form id="mbtiForm">
+            {% for question in questions %}
+            <div class="question" data-id="{{ question.id }}">
+                <div class="question-header">
+                    <div class="question-number">{{ question.id }}</div>
+                    <h3>{{ question.question }}</h3>
+                </div>
+                <div class="options">
+                    {% for option in question.options %}
+                    <div class="option" onclick="selectOption(this, {{ question.id }}, {{ loop.index0 }})">
+                        {{ option.text }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="submit-container">
+                <button type="button" onclick="calculateResult()">查看测试结果</button>
+            </div>
+        </form>
+
+        <div id="result">
+            <div class="result-content">
+                <div class="result-type"></div>
+                <div class="result-description"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let answers = [];
+        const totalQuestions = {{ questions|length }};
+
+        function updateProgress() {
+            const progress = (answers.length / totalQuestions) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function selectOption(element, questionId, optionIndex) {
+            // 移除同一问题中其他选项的选中状态
+            const questionDiv = element.closest('.question');
+            questionDiv.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            
+            // 添加选中状态
+            element.classList.add('selected');
+            
+            // 更新答案
+            const existingAnswer = answers.find(a => a.questionId === questionId);
+            if (existingAnswer) {
+                existingAnswer.option = optionIndex;
+            } else {
+                answers.push({
+                    questionId: questionId,
+                    option: optionIndex
+                });
+            }
+
+            updateProgress();
+        }
+
+        function calculateResult() {
+            if (answers.length < totalQuestions) {
+                alert('请回答所有问题！');
+                return;
+            }
+
+            fetch('/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(answers)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                resultDiv.style.display = 'block';
+                resultDiv.querySelector('.result-type').textContent = `你的MBTI类型是：${data.type}`;
+                resultDiv.querySelector('.result-description').textContent = data.description;
+                
+                // 平滑滚动到结果区域
+                resultDiv.scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('发生错误，请重试！');
+            });
+        }
+
+        // 初始化进度条
+        updateProgress();
+    </script>
+</body>
+</html> 

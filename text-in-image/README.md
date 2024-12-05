@@ -1,84 +1,86 @@
-# 智能图片字幕生成器
+# Smart Image Caption Generator
 
-一个基于Flask和GPT-4o mini的智能图片字幕生成工具，支持自动生成字幕、图层分离和字幕样式自定义。
+[English](README.md) | [中文](README_CN.md)
 
-## 功能特点
+An intelligent image caption generation tool based on Flask and GPT-4 Vision, supporting automatic caption generation, layer separation, and caption style customization.
 
-- 🤖 基于 GPT-4o mini的智能字幕生成
-- 🎨 自动分离图片前景和背景层
-- ✨ 支持字幕样式自定义（字体大小、颜色、粗细等）
-- 📐 支持字幕位置和角度调整（拖拽或滑块控制）
-- 🖼️ 支持导出带字幕的图片
-- 📱 移动端友好的响应式设计
+## Features
 
-## 技术栈
+- 🤖 Intelligent caption generation powered by GPT-4 Vision
+- 🎨 Automatic foreground and background layer separation
+- ✨ Customizable caption styles (font size, color, weight, etc.)
+- 📐 Caption position and angle adjustment (drag or slider control)
+- 🖼️ Export images with captions
+- 📱 Mobile-friendly responsive design
 
-- 后端：Python Flask
-- AI 模型：Azure OpenAI GPT-4 Vision
-- 图像处理：rembg, Pillow
-- 前端：HTML5, CSS3, JavaScript
-- 服务器：Gunicorn
-- 系统服务：Systemd
+## Technical Stack
 
-## 安装步骤
+- Backend: Python Flask
+- AI Model: Azure OpenAI GPT-4 Vision
+- Image Processing: rembg, Pillow
+- Frontend: HTML5, CSS3, JavaScript
+- Server: Gunicorn
+- System Service: Systemd
 
-1. 克隆仓库：
+## Installation Steps
+
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/yaoice/AI-Coding.git
 cd text-in-image
 ```
 
-2. 创建并激活虚拟环境（推荐）：
+2. Create and activate the virtual environment (recommended):
 
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# 或
+# or
 .\venv\Scripts\activate  # Windows
 ```
 
-3. 安装依赖：
+3. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. 配置环境变量：
-创建 `.env` 文件并添加以下配置：
+4. Configure environment variables:
+Create `.env` file and add the following configuration:
 
 ```env
 AZURE_OPENAI_KEY=your_azure_openai_key
 AZURE_OPENAI_ENDPOINT=your_azure_endpoint
 ```
 
-## 部署说明
+## Deployment Instructions
 
-### 开发环境运行
+### Development Environment
 
-1. 启动 Flask 应用：
+1. Start the Flask application:
 
 ```bash
 python app.py
 ```
 
-2. 访问：`http://localhost:5001`
+2. Access: `http://localhost:5001`
 
-### 生产环境部署
+### Production Environment
 
-1. 配置系统服务：
+1. Configure the system service:
 
 ```bash
-# 编辑服务配置文件
+# Edit the service configuration file
 sudo nano /etc/systemd/system/text-in-image.service
-# 复制 text-in-image.service 的内容并根据实际情况修改路径和用户名
+# Copy the content of text-in-image.service and modify the path and username according to your situation
 
-# 创建日志目录
+# Create the log directory
 sudo mkdir /var/log/text-in-image
 sudo chown your_username:your_username /var/log/text-in-image
 ```
 
-2. 启动服务：
+2. Start the service:
 
 ```bash
 sudo systemctl daemon-reload
@@ -86,50 +88,50 @@ sudo systemctl start text-in-image
 sudo systemctl enable text-in-image
 ```
 
-3. 检查服务状态：
+3. Check the service status:
 
 ```bash
 sudo systemctl status text-in-image
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 .
-├── README.md                    # 项目说明文档
-├── requirements.txt             # Python依赖包清单
-├── app.py                      # Flask应用主文件
-├── text-in-image.service       # Systemd服务配置文件
-├── start_text_in_image.sh      # 生产环境启动脚本
-├── static/                     # 静态资源目录
-│   └── uploads/                # 上传文件目录
+├── README.md                    # Project description document
+├── requirements.txt             # Python dependency package list
+├── app.py                      # Flask application main file
+├── text-in-image.service       # Systemd service configuration file
+├── start_text_in_image.sh      # Production environment startup script
+├── static/                     # Static resource directory
+│   └── uploads/                # Upload file directory
 └── templates/
-    └── index.html             # 前端页面模板
+    └── index.html             # Frontend page template
 ```
 
-## 使用说明
+## Usage Instructions
 
-1. 上传图片：点击"选择图片"按钮或拖拽图片到指定区域
-2. 生成字幕：点击魔法棒按钮，AI 将自动生成合适的字幕
-3. 自定义样式：
-   - 调整字体大小、颜色和粗细
-   - 通过拖拽或滑块调整字幕位置
-   - 使用旋转滑块调整字幕角度
-4. 下载成品：点击"下载图片"按钮保存带字幕的图片
+1. Upload an image: Click the "Select Image" button or drag the image to the specified area
+2. Generate captions: Click the magic wand button, and the AI will automatically generate suitable captions
+3. Customize styles:
+   - Adjust font size, color, and weight
+   - Adjust caption position by dragging or sliding the slider
+   - Use the rotation slider to adjust the caption angle
+4. Download the finished product: Click the "Download Image" button to save the image with captions
 
-## 日志查看
+## Log View
 
 ```bash
-# 访问日志
+# Access log
 tail -f /var/log/text-in-image/access.log
 
-# 错误日志
+# Error log
 tail -f /var/log/text-in-image/error.log
 ```
 
-## 注意事项
+## Notes
 
-- 确保已正确配置 Azure OpenAI 的密钥和端点
-- 生产环境部署时建议配置反向代理（如 Nginx）和 SSL 证书
-- 上传图片大小建议不超�� 5MB
-- 建议使用现代浏览器以获得最佳体验
+- Ensure that Azure OpenAI has been correctly configured with the key and endpoint
+- When deploying in a production environment, it is recommended to configure a reverse proxy (such as Nginx) and SSL certificate
+- The size of the uploaded image is recommended not to exceed 5MB
+- It is recommended to use a modern browser for the best experience

@@ -1,15 +1,17 @@
-# AI编程项目集
+# AI Programming Projects
 
-基于Cursor生成的应用程序集合。
+[English](./README.md) | [中文](./README_CN.md)
 
-## 项目列表
+A collection of applications generated using Cursor.
 
-### 1. 智能图片字幕生成器
-基于 GPT-4o mini的图片字幕生成工具，支持自动生成字幕和样式自定义。
+## Project List
 
-[查看详情](./text-in-image/README.md)
+### 1. Smart Image Caption Generator
+An image caption generation tool based on GPT-4o mini, supporting automatic caption generation and style customization.
 
-### 2. MBTI 性格分析
-基于 MBTI 框架的性格分析工具。
+[View Details](./text-in-image/README.md)
 
-[查看详情](./mbti/README.md) 
+### 2. MBTI Personality Analysis
+A personality analysis tool based on the MBTI framework.
+
+[View Details](./mbti/README.md) 
